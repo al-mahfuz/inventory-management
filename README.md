@@ -1,6 +1,6 @@
 # inventory-web
 
-Minimal inventory management app: products, categories, suppliers, warehouses, per-warehouse stock levels, and a stock movement ledger (receive, issue, adjust, transfer). The data model is described in [blocks/data/README.md](blocks/data/README.md).
+Minimal inventory management app: products, categories, suppliers, warehouses, per-warehouse stock levels, and a stock movement ledger (receive, issue, adjust, transfer). The data model is described in [blocks/data/README.md](blocks/data/README.md). For how to use the app, see the [User Guide](docs/USER_GUIDE.md).
 
 Blocks starter app: React 18 + Vite + TypeScript, with a real hosted Blocks IAM login and a project-scoped profile page as the landing page.
 
