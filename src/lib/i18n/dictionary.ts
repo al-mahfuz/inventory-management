@@ -1,5 +1,12 @@
 export const defaultDictionary = {
-  "app.name": "Blocks App",
+  "app.name": "Inventory",
+  "nav.dashboard": "Dashboard",
+  "nav.products": "Products",
+  "nav.stock": "Stock",
+  "nav.movements": "Movements",
+  "nav.categories": "Categories",
+  "nav.suppliers": "Suppliers",
+  "nav.warehouses": "Warehouses",
   "nav.profile": "Profile",
   "nav.logout": "Log out",
   "auth.welcome": "Welcome back",

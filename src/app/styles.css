@@ -183,8 +183,10 @@ pre { background: hsl(var(--foreground)); border-radius: var(--radius); color: h
 .search-box:has(input:focus) { border-color: hsl(var(--primary)); }
 .search-box input, .form-field input, .form-field select { background: transparent; border: 0; color: hsl(var(--foreground)); font: inherit; height: 40px; outline: none; width: 100%; }
 .form-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.filter-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 12px; }
+.filter-grid { align-items: end; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 12px; }
 .form-field { display: grid; gap: 6px; }
+.check-field { align-items: center; align-self: end; display: flex; font-size: 14px; gap: 8px; height: 40px; }
+.check-field input { accent-color: hsl(var(--primary)); height: 16px; width: 16px; }
 .form-field span { color: hsl(var(--muted-foreground)); font-size: 13px; font-weight: 600; }
 .form-field input, .form-field select { border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 0 10px; transition: border-color 0.15s ease; }
 .form-field input:focus, .form-field select:focus { border-color: hsl(var(--primary)); }

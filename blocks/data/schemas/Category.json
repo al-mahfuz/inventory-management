@@ -1,0 +1,12 @@
+{
+  "schemaName": "Category",
+  "collectionName": "Categories",
+  "schemaType": 1,
+  "description": "Product grouping, e.g. Electronics, Raw materials.",
+  "fields": [
+    { "name": "name", "type": "String", "isArray": false, "description": "Display name" },
+    { "name": "code", "type": "String", "isArray": false, "isUniqueData": true, "description": "Short unique code" },
+    { "name": "description", "type": "String", "isArray": false },
+    { "name": "isActive", "type": "Boolean", "isArray": false }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schemaName": "Supplier",
+  "collectionName": "Suppliers",
+  "schemaType": 1,
+  "description": "Vendors products are purchased from.",
+  "fields": [
+    { "name": "name", "type": "String", "isArray": false },
+    { "name": "contactName", "type": "String", "isArray": false },
+    { "name": "email", "type": "String", "isArray": false, "isPIIData": true },
+    { "name": "phone", "type": "String", "isArray": false, "isPIIData": true },
+    { "name": "address", "type": "String", "isArray": false },
+    { "name": "isActive", "type": "Boolean", "isArray": false }
+  ]
+}

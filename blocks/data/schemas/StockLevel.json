@@ -1,0 +1,11 @@
+{
+  "schemaName": "StockLevel",
+  "collectionName": "StockLevels",
+  "schemaType": 1,
+  "description": "Current on-hand quantity of one product in one warehouse. One row per product+warehouse pair.",
+  "fields": [
+    { "name": "productId", "type": "String", "isArray": false, "description": "ItemId of a Product" },
+    { "name": "warehouseId", "type": "String", "isArray": false, "description": "ItemId of a Warehouse" },
+    { "name": "quantity", "type": "Float", "isArray": false, "description": "On-hand quantity" }
+  ]
+}

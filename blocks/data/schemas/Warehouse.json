@@ -1,0 +1,12 @@
+{
+  "schemaName": "Warehouse",
+  "collectionName": "Warehouses",
+  "schemaType": 1,
+  "description": "Physical locations that hold stock.",
+  "fields": [
+    { "name": "name", "type": "String", "isArray": false },
+    { "name": "code", "type": "String", "isArray": false, "isUniqueData": true },
+    { "name": "address", "type": "String", "isArray": false },
+    { "name": "isActive", "type": "Boolean", "isArray": false }
+  ]
+}

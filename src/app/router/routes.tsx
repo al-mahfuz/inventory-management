@@ -5,10 +5,20 @@ import { CallbackPage } from "../../features/auth/CallbackPage";
 import { ErrorPage } from "../../features/auth/ErrorPage";
 import { LoginPage } from "../../features/auth/LoginPage";
 import { NotFoundPage } from "../../features/auth/NotFoundPage";
+import { DashboardPage } from "../../features/inventory/DashboardPage";
+import { CategoriesPage, ProductsPage, SuppliersPage, WarehousesPage } from "../../features/inventory/MasterDataPages";
+import { MovementsPage, StockPage } from "../../features/inventory/StockPages";
 import { ProfilePage } from "../../features/profile/ProfilePage";
 
 const protectedRoutes = {
-  "/": ProfilePage,
+  "/": DashboardPage,
+  "/products": ProductsPage,
+  "/stock": StockPage,
+  "/movements": MovementsPage,
+  "/categories": CategoriesPage,
+  "/suppliers": SuppliersPage,
+  "/warehouses": WarehousesPage,
+  "/profile": ProfilePage,
   "/error": ErrorPage
 };
 

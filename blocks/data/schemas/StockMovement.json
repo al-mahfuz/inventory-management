@@ -1,0 +1,17 @@
+{
+  "schemaName": "StockMovement",
+  "collectionName": "StockMovements",
+  "schemaType": 1,
+  "description": "Append-only ledger of every stock change: receipts, issues, adjustments, transfers.",
+  "fields": [
+    { "name": "productId", "type": "String", "isArray": false, "description": "ItemId of a Product" },
+    { "name": "warehouseId", "type": "String", "isArray": false, "description": "ItemId of a Warehouse" },
+    { "name": "movementType", "type": "String", "isArray": false, "description": "IN | OUT | ADJUSTMENT | TRANSFER_IN | TRANSFER_OUT" },
+    { "name": "quantity", "type": "Float", "isArray": false, "description": "Signed change: positive adds stock, negative removes it" },
+    { "name": "balanceAfter", "type": "Float", "isArray": false, "description": "On-hand quantity in this warehouse after the movement" },
+    { "name": "unitCost", "type": "Float", "isArray": false },
+    { "name": "reference", "type": "String", "isArray": false, "description": "PO / invoice / transfer number" },
+    { "name": "note", "type": "String", "isArray": false },
+    { "name": "movementDate", "type": "DateTime", "isArray": false }
+  ]
+}

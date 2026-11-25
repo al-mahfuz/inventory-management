@@ -1,0 +1,19 @@
+{
+  "schemaName": "Product",
+  "collectionName": "Products",
+  "schemaType": 1,
+  "description": "Stock-keeping item (SKU) master data.",
+  "fields": [
+    { "name": "sku", "type": "String", "isArray": false, "isUniqueData": true, "description": "Unique stock-keeping unit code" },
+    { "name": "name", "type": "String", "isArray": false },
+    { "name": "description", "type": "String", "isArray": false },
+    { "name": "barcode", "type": "String", "isArray": false },
+    { "name": "categoryId", "type": "String", "isArray": false, "description": "ItemId of a Category" },
+    { "name": "supplierId", "type": "String", "isArray": false, "description": "ItemId of the default Supplier" },
+    { "name": "unit", "type": "String", "isArray": false, "description": "Unit of measure, e.g. pcs, kg, box" },
+    { "name": "costPrice", "type": "Float", "isArray": false },
+    { "name": "sellingPrice", "type": "Float", "isArray": false },
+    { "name": "reorderLevel", "type": "Float", "isArray": false, "description": "Low-stock threshold across all warehouses" },
+    { "name": "isActive", "type": "Boolean", "isArray": false }
+  ]
+}

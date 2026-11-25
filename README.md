@@ -1,5 +1,7 @@
 # inventory-web
 
+Minimal inventory management app: products, categories, suppliers, warehouses, per-warehouse stock levels, and a stock movement ledger (receive, issue, adjust, transfer). The data model is described in [blocks/data/README.md](blocks/data/README.md).
+
 Blocks starter app: React 18 + Vite + TypeScript, with a real hosted Blocks IAM login and a project-scoped profile page as the landing page.
 
 Every Blocks API call in this app goes through [`@seliseblocks/client`](https://www.npmjs.com/package/@seliseblocks/client) via a single `createBlocksClient()` instance in `src/lib/blocks/client.ts` — there is no hand-written `fetch()` wrapper for Blocks endpoints anywhere in this app. Each SDK module is exercised in context rather than in one dedicated demo panel: `auth` in the hosted login flow, `iam` on the Profile page and user menu, and `localization` in `LocalizationProvider`. Add more pages under `src/features/` as your app needs them.
@@ -46,7 +48,14 @@ During each environment build, `scripts/write-release-env.mjs` writes `dist/env.
 
 - `/login` — login page (redirects to Blocks IAM).
 - `/login/callback` — completes the hosted IAM callback via `blocksClient.auth.idp.callback()`, then returns to the page you started from.
-- `/` and `/profile` — protected; redirect to `/login` when signed out.
+- `/` — dashboard: counts, units on hand, stock value at cost, low-stock list, recent movements.
+- `/products`, `/categories`, `/suppliers`, `/warehouses` — searchable list with create, edit and delete.
+- `/stock` — on-hand quantity per product and warehouse, and **Record movement** (receive, issue, stock-count adjustment, transfer).
+- `/movements` — the movement ledger, filterable by type.
+- `/profile` — signed-in user details.
+- Every page except login is protected and redirects to `/login` when signed out.
+
+Stock movements update `StockLevel` from the browser in separate Data Gateway calls. That keeps the app backend-free but is not atomic: two simultaneous movements of the same product in the same warehouse can overwrite each other, and a transfer that fails halfway leaves only its first leg. Move `recordMovement` (`src/features/inventory/stock.ts`) into a Blocks function before multi-user production use.
 - Sidebar + topbar shell matching the `@seliseblocks/blocks-kit` look (icon-only rail on narrow screens, avatar dropdown, notifications menu, active-item accent bar).
 - `blocks/localization/*.en.json` local i18n seed files for AI or human edits. Sync them through `blocks localization validate` and `blocks localization push`; the runtime app reads Localization service data through `blocksClient.localization`.
 
