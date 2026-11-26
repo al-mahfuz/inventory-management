@@ -16,19 +16,17 @@ import { byId, formatMoney, formatQty, isLowStock, onHandByProduct, useRecordMov
 import type { MovementKind } from "./stock";
 import { MOVEMENT_TYPES } from "./types";
 import type { StockMovement } from "./types";
+import { useT } from "../../lib/i18n/LocalizationProvider";
+import { getActiveLocale } from "../../lib/i18n/dictionary";
 
-const KIND_LABELS: Record<MovementKind, string> = {
-  ADJUSTMENT: "Adjust (stock count)",
-  IN: "Receive (stock in)",
-  OUT: "Issue (stock out)",
-  TRANSFER: "Transfer between warehouses"
-};
+const MOVEMENT_KINDS: MovementKind[] = ["IN", "OUT", "ADJUSTMENT", "TRANSFER"];
 
 function Loading() {
   return <div className="panel"><Skeleton className="skeleton-line-lg" /><Skeleton className="skeleton-line" /><Skeleton className="skeleton-line" /></div>;
 }
 
 export function StockPage() {
+  const { t } = useT();
   const products = useRecords("Product");
   const warehouses = useRecords("Warehouse");
   const levels = useRecords("StockLevel");
@@ -58,19 +56,19 @@ export function StockPage() {
   return (
     <section>
       <PageHeader
-        title="Stock"
-        subtitle="On-hand quantity per product and warehouse."
-        actions={<ActionButton icon={<ArrowLeftRight size={16} />} onClick={() => setFormOpen(true)}>Record movement</ActionButton>}
+        title={t("nav.stock")}
+        subtitle={t("stock.subtitle")}
+        actions={<ActionButton icon={<ArrowLeftRight size={16} />} onClick={() => setFormOpen(true)}>{t("stock.recordMovement")}</ActionButton>}
       />
 
       <div className="filter-grid">
         <label className="search-box">
           <Search size={16} />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search SKU or name" aria-label="Search stock" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("stock.searchPlaceholder")} aria-label={t("stock.searchLabel")} />
         </label>
         <SelectField
-          label="Warehouse"
-          placeholder="All warehouses"
+          label={t("stock.warehouse")}
+          placeholder={t("stock.allWarehouses")}
           value={warehouseFilter}
           onChange={(event) => setWarehouseFilter(event.target.value)}
           options={(warehouses.data ?? []).map((w) => ({ label: `${w.code} · ${w.name}`, value: w.id }))}
@@ -80,23 +78,23 @@ export function StockPage() {
       {loading ? <Loading /> : error ? (
         <ErrorState message={error.message} onRetry={() => { void products.refetch(); void warehouses.refetch(); void levels.refetch(); }} />
       ) : rows.length === 0 ? (
-        <EmptyState icon={<PackageCheck size={28} />} title="No stock recorded" description="Receive stock into a warehouse to see it here." />
+        <EmptyState icon={<PackageCheck size={28} />} title={t("stock.emptyTitle")} description={t("stock.emptyDescription")} />
       ) : (
         <DataTable
           rows={rows}
           columns={[
-            { header: "SKU", key: "sku", render: (row) => <span className="mono">{productById.get(row.productId)?.sku ?? "?"}</span> },
-            { header: "Product", key: "product", render: (row) => productById.get(row.productId)?.name ?? "Deleted product" },
-            { header: "Warehouse", key: "warehouse", render: (row) => warehouseById.get(row.warehouseId)?.name ?? "Deleted warehouse" },
-            { header: "On hand", key: "quantity", render: (row) => <strong>{formatQty(row.quantity)} {productById.get(row.productId)?.unit ?? ""}</strong> },
+            { header: t("product.sku"), key: "sku", render: (row) => <span className="mono">{productById.get(row.productId)?.sku ?? "?"}</span> },
+            { header: t("product.product"), key: "product", render: (row) => productById.get(row.productId)?.name ?? t("stock.deletedProduct") },
+            { header: t("stock.warehouse"), key: "warehouse", render: (row) => warehouseById.get(row.warehouseId)?.name ?? t("stock.deletedWarehouse") },
+            { header: t("product.onHand"), key: "quantity", render: (row) => <strong>{formatQty(row.quantity)} {productById.get(row.productId)?.unit ?? ""}</strong> },
             {
-              header: "Status",
+              header: t("ui.status"),
               key: "status",
               render: (row) => {
                 const product = productById.get(row.productId);
                 return product && isLowStock(product, totals.get(row.productId) ?? 0)
-                  ? <StatusPill tone="warn">Below reorder level</StatusPill>
-                  : <StatusPill tone="good">OK</StatusPill>;
+                  ? <StatusPill tone="warn">{t("stock.belowReorder")}</StatusPill>
+                  : <StatusPill tone="good">{t("stock.ok")}</StatusPill>;
               }
             }
           ]}
@@ -109,6 +107,7 @@ export function StockPage() {
 }
 
 function MovementForm({ onClose }: { onClose: () => void }) {
+  const { errorMessage, t } = useT();
   const products = useRecords("Product");
   const warehouses = useRecords("Warehouse");
   const movement = useRecordMovement();
@@ -139,26 +138,26 @@ function MovementForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Record stock movement" onClose={onClose}>
+    <Modal title={t("movement.formTitle")} onClose={onClose}>
       <form className="form-grid" onSubmit={onSubmit}>
         <div style={{ gridColumn: "1 / -1" }}>
-          <SelectField label="Movement" value={kind} onChange={(event) => setKind(event.target.value as MovementKind)} options={(Object.keys(KIND_LABELS) as MovementKind[]).map((value) => ({ label: KIND_LABELS[value], value }))} />
+          <SelectField label={t("movement.movement")} value={kind} onChange={(event) => setKind(event.target.value as MovementKind)} options={MOVEMENT_KINDS.map((value) => ({ label: t(`movement.kind.${value}`), value }))} />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
-          <SelectField label="Product" required placeholder="Select a product" value={values.productId} onChange={set("productId")} options={productOptions} />
+          <SelectField label={t("product.product")} required placeholder={t("movement.selectProduct")} value={values.productId} onChange={set("productId")} options={productOptions} />
         </div>
-        <SelectField label={kind === "TRANSFER" ? "From warehouse" : "Warehouse"} required placeholder="Select" value={values.warehouseId} onChange={set("warehouseId")} options={warehouseOptions} />
+        <SelectField label={kind === "TRANSFER" ? t("movement.fromWarehouse") : t("stock.warehouse")} required placeholder={t("ui.select")} value={values.warehouseId} onChange={set("warehouseId")} options={warehouseOptions} />
         {kind === "TRANSFER" ? (
-          <SelectField label="To warehouse" required placeholder="Select" value={values.toWarehouseId} onChange={set("toWarehouseId")} options={warehouseOptions.filter((o) => o.value !== values.warehouseId)} />
+          <SelectField label={t("movement.toWarehouse")} required placeholder={t("ui.select")} value={values.toWarehouseId} onChange={set("toWarehouseId")} options={warehouseOptions.filter((o) => o.value !== values.warehouseId)} />
         ) : null}
-        <FormField label={kind === "ADJUSTMENT" ? "Counted quantity" : "Quantity"} type="number" min={0} step="any" required value={values.quantity} onChange={set("quantity")} />
-        {kind === "IN" ? <FormField label="Unit cost" type="number" min={0} step="any" value={values.unitCost} onChange={set("unitCost")} /> : null}
-        <FormField label="Reference" placeholder="PO / invoice / ticket no." value={values.reference} onChange={set("reference")} />
-        <FormField label="Note" value={values.note} onChange={set("note")} />
-        {movement.error ? <div style={{ gridColumn: "1 / -1" }}><Alert tone="error">{movement.error.message}</Alert></div> : null}
+        <FormField label={kind === "ADJUSTMENT" ? t("movement.countedQuantity") : t("movement.quantity")} type="number" min={0} step="any" required value={values.quantity} onChange={set("quantity")} />
+        {kind === "IN" ? <FormField label={t("movement.unitCost")} type="number" min={0} step="any" value={values.unitCost} onChange={set("unitCost")} /> : null}
+        <FormField label={t("movement.reference")} placeholder={t("movement.referencePlaceholder")} value={values.reference} onChange={set("reference")} />
+        <FormField label={t("movement.note")} value={values.note} onChange={set("note")} />
+        {movement.error ? <div style={{ gridColumn: "1 / -1" }}><Alert tone="error">{errorMessage(movement.error)}</Alert></div> : null}
         <div className="form-actions">
-          <button type="button" className="icon-button" onClick={onClose}>Cancel</button>
-          <button type="submit" className="primary-button" disabled={movement.isPending}>{movement.isPending ? "Saving..." : "Record"}</button>
+          <button type="button" className="icon-button" onClick={onClose}>{t("ui.cancel")}</button>
+          <button type="submit" className="primary-button" disabled={movement.isPending}>{movement.isPending ? t("ui.saving") : t("movement.record")}</button>
         </div>
       </form>
     </Modal>
@@ -168,6 +167,7 @@ function MovementForm({ onClose }: { onClose: () => void }) {
 const movementDate = (m: StockMovement) => m.movementDate ?? m.CreatedDate ?? "";
 
 export function MovementsPage() {
+  const { t } = useT();
   const movements = useRecords("StockMovement");
   const products = useRecords("Product");
   const warehouses = useRecords("Warehouse");
@@ -182,34 +182,35 @@ export function MovementsPage() {
 
   return (
     <section>
-      <PageHeader title="Movements" subtitle="Every stock change, newest first. Entries are never edited — correct mistakes with an adjustment." />
+      <PageHeader title={t("nav.movements")} subtitle={t("movements.subtitle")} />
       <div className="filter-grid">
-        <SelectField label="Type" placeholder="All types" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} options={MOVEMENT_TYPES.map((t) => ({ label: t, value: t }))} />
+        <SelectField label={t("movements.type")} placeholder={t("movements.allTypes")} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} options={MOVEMENT_TYPES.map((type) => ({ label: t(`movement.type.${type}`), value: type }))} />
       </div>
       {movements.isLoading ? <Loading /> : movements.isError ? (
         <ErrorState message={movements.error.message} onRetry={() => movements.refetch()} />
       ) : rows.length === 0 ? (
-        <EmptyState icon={<History size={28} />} title="No movements yet" description="Movements appear here when you record them on the Stock page." />
+        <EmptyState icon={<History size={28} />} title={t("movements.emptyTitle")} description={t("movements.emptyDescription")} />
       ) : (
-        <MovementTable rows={rows} productName={(id) => productById.get(id)?.name ?? "Deleted product"} warehouseName={(id) => warehouseById.get(id)?.name ?? "Deleted warehouse"} />
+        <MovementTable rows={rows} productName={(id) => productById.get(id)?.name ?? t("stock.deletedProduct")} warehouseName={(id) => warehouseById.get(id)?.name ?? t("stock.deletedWarehouse")} />
       )}
     </section>
   );
 }
 
 export function MovementTable({ productName, rows, warehouseName }: { productName: (id: string) => string; rows: StockMovement[]; warehouseName: (id: string) => string }) {
+  const { t } = useT();
   return (
     <DataTable
       rows={rows}
       columns={[
-        { header: "Date", key: "date", render: (row) => (movementDate(row) ? new Date(movementDate(row)).toLocaleString() : "—") },
-        { header: "Type", key: "type", render: (row) => <StatusPill tone={row.quantity >= 0 ? "good" : "warn"}>{row.movementType}</StatusPill> },
-        { header: "Product", key: "product", render: (row) => productName(row.productId) },
-        { header: "Warehouse", key: "warehouse", render: (row) => warehouseName(row.warehouseId) },
-        { header: "Change", key: "quantity", render: (row) => <strong>{row.quantity > 0 ? "+" : ""}{formatQty(row.quantity)}</strong> },
-        { header: "Balance", key: "balance", render: (row) => formatQty(row.balanceAfter) },
-        { header: "Unit cost", key: "unitCost", render: (row) => (row.unitCost ? formatMoney(row.unitCost) : "—") },
-        { header: "Reference", key: "reference", render: (row) => row.reference || "—" }
+        { header: t("movements.date"), key: "date", render: (row) => (movementDate(row) ? new Date(movementDate(row)).toLocaleString(getActiveLocale()) : "—") },
+        { header: t("movements.type"), key: "type", render: (row) => <StatusPill tone={row.quantity >= 0 ? "good" : "warn"}>{t(`movement.type.${row.movementType}`)}</StatusPill> },
+        { header: t("product.product"), key: "product", render: (row) => productName(row.productId) },
+        { header: t("stock.warehouse"), key: "warehouse", render: (row) => warehouseName(row.warehouseId) },
+        { header: t("movements.change"), key: "quantity", render: (row) => <strong>{row.quantity > 0 ? "+" : ""}{formatQty(row.quantity)}</strong> },
+        { header: t("movements.balance"), key: "balance", render: (row) => formatQty(row.balanceAfter) },
+        { header: t("movement.unitCost"), key: "unitCost", render: (row) => (row.unitCost ? formatMoney(row.unitCost) : "—") },
+        { header: t("movement.reference"), key: "reference", render: (row) => row.reference || "—" }
       ]}
     />
   );

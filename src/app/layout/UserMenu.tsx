@@ -16,7 +16,7 @@ export function UserMenu({ onNavigate }: { onNavigate: (path: string) => void })
   const { t } = useT();
   const me = useCurrentUser();
   const profile = me.data?.data;
-  const name = userDisplayName(profile) || (me.isLoading ? "Loading..." : "Guest");
+  const name = userDisplayName(profile) || (me.isLoading ? t("ui.loading") : t("shell.guest"));
   const roles = profile?.roles ?? [];
 
   function handleLogout() {
@@ -26,7 +26,7 @@ export function UserMenu({ onNavigate }: { onNavigate: (path: string) => void })
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="user-menu-trigger" aria-label="Open user menu">
+      <DropdownMenuTrigger className="user-menu-trigger" aria-label={t("shell.openUserMenu")}>
         <span className="avatar avatar-sm">{userInitials(profile)}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[280px]">

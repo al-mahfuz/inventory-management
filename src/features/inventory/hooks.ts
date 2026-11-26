@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createRecord, deleteRecord, listAll, updateRecord } from "./api";
+import { getActiveLocale } from "../../lib/i18n/dictionary";
 import { recordMovement } from "./stock";
 import type { MovementRequest } from "./stock";
 import type { InventorySchema, Product, StockLevel } from "./types";
@@ -51,9 +52,9 @@ export function isLowStock(product: Product, onHand: number): boolean {
 }
 
 export function formatQty(value: number | undefined): string {
-  return (value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
+  return (value ?? 0).toLocaleString(getActiveLocale(), { maximumFractionDigits: 3 });
 }
 
 export function formatMoney(value: number | undefined): string {
-  return (value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  return (value ?? 0).toLocaleString(getActiveLocale(), { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 }

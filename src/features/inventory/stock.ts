@@ -1,3 +1,4 @@
+import { LocalizedError } from "../../lib/i18n/LocalizedError";
 import { createRecord, listAll, updateRecord } from "./api";
 import type { MovementType, StockLevel } from "./types";
 
@@ -30,7 +31,7 @@ async function applyDelta(
 ) {
   const current = level?.quantity ?? 0;
   const next = current + delta;
-  if (next < 0) throw new Error(`Not enough stock: ${current} on hand, ${-delta} requested.`);
+  if (next < 0) throw new LocalizedError("errors.notEnoughStock", { onHand: current, requested: -delta });
 
   if (level) await updateRecord("StockLevel", level.id, { quantity: next });
   else await createRecord("StockLevel", { productId: request.productId, quantity: next, warehouseId });
@@ -56,8 +57,8 @@ async function applyDelta(
  * other's StockLevel. Move this into a Blocks function when that matters.
  */
 export async function recordMovement(request: MovementRequest) {
-  if (!Number.isFinite(request.quantity) || request.quantity < 0) throw new Error("Quantity must be zero or more.");
-  if (request.kind !== "ADJUSTMENT" && request.quantity === 0) throw new Error("Quantity must be more than zero.");
+  if (!Number.isFinite(request.quantity) || request.quantity < 0) throw new LocalizedError("errors.quantityNonNegative");
+  if (request.kind !== "ADJUSTMENT" && request.quantity === 0) throw new LocalizedError("errors.quantityPositive");
 
   const source = await findLevel(request.productId, request.warehouseId);
 
@@ -68,14 +69,14 @@ export async function recordMovement(request: MovementRequest) {
       return applyDelta(request, request.warehouseId, "OUT", -request.quantity, source);
     case "ADJUSTMENT": {
       const delta = request.quantity - (source?.quantity ?? 0);
-      if (delta === 0) throw new Error("Counted quantity matches stock on hand; nothing to adjust.");
+      if (delta === 0) throw new LocalizedError("errors.nothingToAdjust");
       return applyDelta(request, request.warehouseId, "ADJUSTMENT", delta, source);
     }
     case "TRANSFER": {
       const to = request.toWarehouseId;
-      if (!to || to === request.warehouseId) throw new Error("Pick a different destination warehouse.");
+      if (!to || to === request.warehouseId) throw new LocalizedError("errors.differentWarehouse");
       if ((source?.quantity ?? 0) < request.quantity) {
-        throw new Error(`Not enough stock: ${source?.quantity ?? 0} on hand, ${request.quantity} requested.`);
+        throw new LocalizedError("errors.notEnoughStock", { onHand: source?.quantity ?? 0, requested: request.quantity });
       }
       await applyDelta(request, request.warehouseId, "TRANSFER_OUT", -request.quantity, source);
       return applyDelta(request, to, "TRANSFER_IN", request.quantity, await findLevel(request.productId, to));

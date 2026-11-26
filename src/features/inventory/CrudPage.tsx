@@ -14,6 +14,8 @@ import { PageHeader } from "../../shared/ui/PageHeader";
 import { SelectField } from "../../shared/ui/SelectField";
 import type { SelectOption } from "../../shared/ui/SelectField";
 import { Skeleton } from "../../shared/ui/Skeleton";
+import { useT } from "../../lib/i18n/LocalizationProvider";
+import { getActiveLocale } from "../../lib/i18n/dictionary";
 import { useRecordMutations, useRecords } from "./hooks";
 import type { InventorySchema, SchemaRecord } from "./types";
 
@@ -59,6 +61,7 @@ export function CrudPage<S extends InventorySchema>({
   emptyIcon,
   fields,
   noun,
+  nounPlural,
   schema,
   searchKeys,
   subtitle,
@@ -67,12 +70,16 @@ export function CrudPage<S extends InventorySchema>({
   columns: Column<SchemaRecord<S>>[];
   emptyIcon: ReactNode;
   fields: FieldDef[];
+  /** Singular entity name as used mid-sentence, already translated. */
   noun: string;
+  /** Plural entity name as used mid-sentence, already translated. */
+  nounPlural: string;
   schema: S;
   searchKeys: (keyof SchemaRecord<S> & string)[];
   subtitle: string;
   title: string;
 }) {
+  const { t } = useT();
   const records = useRecords(schema);
   const mutations = useRecordMutations(schema);
   const [search, setSearch] = useState("");
@@ -115,8 +122,8 @@ export function CrudPage<S extends InventorySchema>({
       key: "actions",
       render: (row) => (
         <div className="row-actions">
-          <ActionButton variant="icon" title={`Edit ${noun}`} aria-label={`Edit ${noun}`} icon={<Pencil size={16} />} onClick={() => openForm(row)} />
-          <ActionButton variant="icon" title={`Delete ${noun}`} aria-label={`Delete ${noun}`} icon={<Trash2 size={16} />} onClick={() => setDeleting(row)} />
+          <ActionButton variant="icon" title={t("crud.edit", { noun })} aria-label={t("crud.edit", { noun })} icon={<Pencil size={16} />} onClick={() => openForm(row)} />
+          <ActionButton variant="icon" title={t("crud.delete", { noun })} aria-label={t("crud.delete", { noun })} icon={<Trash2 size={16} />} onClick={() => setDeleting(row)} />
         </div>
       )
     }
@@ -124,14 +131,14 @@ export function CrudPage<S extends InventorySchema>({
 
   return (
     <section>
-      <PageHeader title={title} subtitle={subtitle} actions={<ActionButton icon={<Plus size={16} />} onClick={() => openForm()}>New {noun}</ActionButton>} />
+      <PageHeader title={title} subtitle={subtitle} actions={<ActionButton icon={<Plus size={16} />} onClick={() => openForm()}>{t("crud.new", { noun })}</ActionButton>} />
 
       <div className="toolbar">
         <label className="search-box">
           <Search size={16} />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${title.toLowerCase()}`} aria-label={`Search ${title.toLowerCase()}`} />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("crud.search", { items: nounPlural })} aria-label={t("crud.search", { items: nounPlural })} />
         </label>
-        <span className="muted">{records.data ? `${rows.length} of ${records.data.length}` : null}</span>
+        <span className="muted">{records.data ? t("crud.count", { shown: rows.length.toLocaleString(getActiveLocale()), total: records.data.length.toLocaleString(getActiveLocale()) }) : null}</span>
       </div>
 
       {mutations.remove.error ? <Alert tone="error">{mutations.remove.error.message}</Alert> : null}
@@ -143,16 +150,16 @@ export function CrudPage<S extends InventorySchema>({
       ) : rows.length === 0 ? (
         <EmptyState
           icon={emptyIcon}
-          title={search ? `No ${title.toLowerCase()} match "${search}"` : `No ${title.toLowerCase()} yet`}
-          description={search ? "Try a different search." : `Add your first ${noun} to get started.`}
-          action={search ? null : <ActionButton icon={<Plus size={16} />} onClick={() => openForm()}>New {noun}</ActionButton>}
+          title={search ? t("crud.noMatch", { items: nounPlural, search }) : t("crud.emptyTitle", { items: nounPlural })}
+          description={search ? t("crud.tryDifferentSearch") : t("crud.emptyDescription", { noun })}
+          action={search ? null : <ActionButton icon={<Plus size={16} />} onClick={() => openForm()}>{t("crud.new", { noun })}</ActionButton>}
         />
       ) : (
         <DataTable columns={tableColumns} rows={rows} />
       )}
 
       {editing ? (
-        <Modal title={editing.id ? `Edit ${noun}` : `New ${noun}`} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? t("crud.edit", { noun }) : t("crud.new", { noun })} onClose={() => setEditing(null)}>
           <form className="form-grid" onSubmit={onSubmit}>
             {fields.map((field) => {
               const value = editing.values[field.name];
@@ -169,7 +176,7 @@ export function CrudPage<S extends InventorySchema>({
               if (field.type === "select") {
                 return (
                   <div key={field.name} style={style}>
-                    <SelectField label={field.label} options={field.options ?? []} placeholder="None" required={field.required} value={String(value)} onChange={(event) => setValue(event.target.value)} />
+                    <SelectField label={field.label} options={field.options ?? []} placeholder={t("ui.none")} required={field.required} value={String(value)} onChange={(event) => setValue(event.target.value)} />
                   </div>
                 );
               }
@@ -189,8 +196,8 @@ export function CrudPage<S extends InventorySchema>({
             })}
             {formError ? <div style={{ gridColumn: "1 / -1" }}><Alert tone="error">{formError}</Alert></div> : null}
             <div className="form-actions">
-              <button type="button" className="icon-button" onClick={() => setEditing(null)}>Cancel</button>
-              <button type="submit" className="primary-button" disabled={saving}>{saving ? "Saving..." : "Save"}</button>
+              <button type="button" className="icon-button" onClick={() => setEditing(null)}>{t("ui.cancel")}</button>
+              <button type="submit" className="primary-button" disabled={saving}>{saving ? t("ui.saving") : t("ui.save")}</button>
             </div>
           </form>
         </Modal>
@@ -198,8 +205,8 @@ export function CrudPage<S extends InventorySchema>({
 
       {deleting ? (
         <ConfirmDialog
-          title={`Delete ${noun}`}
-          message={`Delete this ${noun}? Records that point to it keep the old id.`}
+          title={t("crud.delete", { noun })}
+          message={t("crud.deleteConfirm", { noun })}
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
             mutations.remove.mutate(deleting.id);

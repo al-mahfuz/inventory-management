@@ -1,9 +1,17 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { blocksClient } from "../blocks/client";
-import { defaultDictionary } from "./dictionary";
-import type { TranslationKey } from "./dictionary";
+import {
+  DEFAULT_LANGUAGE,
+  baseLanguage,
+  interpolate,
+  localDictionary,
+  nativeLanguageName,
+  setActiveLocale
+} from "./dictionary";
+import type { TranslationKey, TranslationParams } from "./dictionary";
+import { LocalizedError } from "./LocalizedError";
 
 type Dictionary = Record<string, string>;
 export type LocalizationLanguage = { code: string; isDefault: boolean; name: string };
@@ -11,23 +19,41 @@ type LocalizationValue = {
   language: string;
   languages: LocalizationLanguage[];
   setLanguage: (language: string) => void;
-  t: (key: TranslationKey, fallback?: string) => string;
+  t: (key: TranslationKey, params?: TranslationParams) => string;
+  /** Message for a caught error: translated when it is a LocalizedError. */
+  errorMessage: (error: unknown) => string;
 };
 
 const LocalizationContext = createContext<LocalizationValue | undefined>(undefined);
 const LANGUAGE_KEY = "blocks-app:language";
-// One module per screen would keep the initial payload small, but this
-// starter only ships Profile -- add module names here as you add pages.
+// Cloud modules layered over the bundled dictionaries. Keys in the cloud
+// "common" module are the same keys the app uses (see blocks/localization).
 const MODULES = ["common"];
 
+// Languages the app ships dictionaries for -- used when the tenant's
+// language list is unavailable (offline, not signed in to a tenant yet).
+const BUNDLED_LANGUAGES: LocalizationLanguage[] = [
+  { code: "en-US", isDefault: true, name: "English" },
+  { code: "de-DE", isDefault: false, name: "Deutsch" },
+  { code: "bn-BD", isDefault: false, name: "বাংলা" }
+];
+
 function normalizeLanguage(raw: Record<string, unknown>): LocalizationLanguage {
-  const code = raw.languageCode ?? raw.code ?? raw.culture ?? "en";
-  const name = raw.languageName ?? raw.displayName ?? raw.name ?? String(code);
-  return { code: String(code), isDefault: Boolean(raw.isDefault), name: String(name) };
+  const code = String(raw.languageCode ?? raw.code ?? raw.culture ?? DEFAULT_LANGUAGE);
+  const name = nativeLanguageName(code) ?? String(raw.languageName ?? raw.displayName ?? raw.name ?? code);
+  return { code, isDefault: Boolean(raw.isDefault), name };
+}
+
+function readStoredLanguage(): string {
+  try {
+    return localStorage.getItem(LANGUAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
 }
 
 export function LocalizationProvider({ children }: { children: ReactNode }) {
-  const [languageOverride, setLanguageOverride] = useState(() => localStorage.getItem(LANGUAGE_KEY) ?? "");
+  const [languageOverride, setLanguageOverride] = useState(readStoredLanguage);
 
   const languagesQuery = useQuery({
     queryFn: () => blocksClient.localization.languages(),
@@ -35,21 +61,36 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60_000
   });
 
-  const languages = useMemo(() => (languagesQuery.data ?? []).map(normalizeLanguage), [languagesQuery.data]);
-  // Until /Language/Gets resolves (or on a tenant with none configured), fall
-  // back to "en" -- it must still match a real languageCode for translations
-  // to resolve, so this is a startup default rather than a guaranteed hit.
-  const defaultLanguage = languages.find((entry) => entry.isDefault)?.code ?? languages[0]?.code ?? "en";
-  const language = languageOverride || defaultLanguage;
+  const languages = useMemo(() => {
+    const fromTenant = (languagesQuery.data ?? []).map(normalizeLanguage);
+    return fromTenant.length > 0 ? fromTenant : BUNDLED_LANGUAGES;
+  }, [languagesQuery.data]);
+
+  // English is always the default, whatever the tenant marks as default --
+  // use the tenant's English culture code (e.g. en-US) so cloud lookups hit.
+  const defaultLanguage = languages.find((entry) => baseLanguage(entry.code) === "en")?.code ?? DEFAULT_LANGUAGE;
+  const language = languages.some((entry) => entry.code === languageOverride) ? languageOverride : defaultLanguage;
+
+  // Formatters (numbers, dates) read the active locale outside React.
+  setActiveLocale(language);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   function setLanguage(next: string) {
-    localStorage.setItem(LANGUAGE_KEY, next);
+    try {
+      localStorage.setItem(LANGUAGE_KEY, next);
+    } catch {
+      // Storage blocked: the choice still applies for this session.
+    }
     setLanguageOverride(next);
   }
 
   // One cached query per module for the active language -- TanStack Query
-  // dedupes/caches by queryKey, so switching languages (or remounting) never
-  // re-fetches a (language, module) pair that's already in cache.
+  // dedupes/caches by queryKey, so switching back never re-fetches a
+  // (language, module) pair that's already in cache. A missing module just
+  // leaves the bundled dictionary in charge.
   const moduleQueries = useQueries({
     queries: MODULES.map((moduleName) => ({
       queryFn: () => blocksClient.localization.translations(moduleName, language),
@@ -60,23 +101,23 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
 
   const cloudDictionary = useMemo<Dictionary>(() => {
     const merged: Dictionary = {};
-    moduleQueries.forEach((query, index) => {
-      const moduleName = MODULES[index];
-      for (const [key, value] of Object.entries(query.data ?? {})) {
-        const appKey = moduleName === "common" && key in defaultDictionary ? key : `${moduleName}.${key}`;
-        merged[appKey] = value;
-      }
-    });
+    for (const query of moduleQueries) Object.assign(merged, query.data ?? {});
     return merged;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleQueries.map((query) => query.dataUpdatedAt).join()]);
+  }, [language, moduleQueries.map((query) => query.dataUpdatedAt).join()]);
 
-  const value = useMemo<LocalizationValue>(() => ({
-    language,
-    languages,
-    setLanguage,
-    t: (key, fallback) => cloudDictionary[key] ?? defaultDictionary[key] ?? fallback ?? key
-  }), [cloudDictionary, language, languages]);
+  const value = useMemo<LocalizationValue>(() => {
+    const local = localDictionary(language);
+    const t = (key: TranslationKey, params?: TranslationParams) =>
+      interpolate(cloudDictionary[key] || local[key], params);
+    return {
+      errorMessage: (error) => (error instanceof LocalizedError ? t(error.key, error.params) : error instanceof Error ? error.message : String(error)),
+      language,
+      languages,
+      setLanguage,
+      t
+    };
+  }, [cloudDictionary, language, languages]);
 
   return <LocalizationContext.Provider value={value}>{children}</LocalizationContext.Provider>;
 }

@@ -6,8 +6,12 @@ import { PageHeader } from "../../shared/ui/PageHeader";
 import { Skeleton } from "../../shared/ui/Skeleton";
 import { byId, formatMoney, formatQty, isLowStock, onHandByProduct, useRecords } from "./hooks";
 import { MovementTable } from "./StockPages";
+import { useT } from "../../lib/i18n/LocalizationProvider";
+import { getActiveLocale } from "../../lib/i18n/dictionary";
 
 export function DashboardPage() {
+  const { t } = useT();
+  const locale = getActiveLocale();
   const products = useRecords("Product");
   const warehouses = useRecords("Warehouse");
   const suppliers = useRecords("Supplier");
@@ -30,17 +34,17 @@ export function DashboardPage() {
     .slice(0, 8);
 
   const metrics = [
-    { label: "Active products", value: activeProducts.length.toLocaleString() },
-    { label: "Warehouses", value: (warehouses.data?.length ?? 0).toLocaleString() },
-    { label: "Suppliers", value: (suppliers.data?.length ?? 0).toLocaleString() },
-    { label: "Units on hand", value: formatQty(totalUnits) },
-    { label: "Stock value (cost)", value: formatMoney(stockValue) },
-    { label: "Low-stock items", value: lowStock.length.toLocaleString() }
+    { label: t("dashboard.activeProducts"), value: activeProducts.length.toLocaleString(locale) },
+    { label: t("nav.warehouses"), value: (warehouses.data?.length ?? 0).toLocaleString(locale) },
+    { label: t("nav.suppliers"), value: (suppliers.data?.length ?? 0).toLocaleString(locale) },
+    { label: t("dashboard.unitsOnHand"), value: formatQty(totalUnits) },
+    { label: t("dashboard.stockValue"), value: formatMoney(stockValue) },
+    { label: t("dashboard.lowStockItems"), value: lowStock.length.toLocaleString(locale) }
   ];
 
   return (
     <section>
-      <PageHeader title="Dashboard" subtitle="Stock position at a glance." />
+      <PageHeader title={t("nav.dashboard")} subtitle={t("dashboard.subtitle")} />
 
       {error ? <ErrorState message={error.message} onRetry={() => queries.forEach((query) => void query.refetch())} /> : null}
 
@@ -53,29 +57,29 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <h3>Low stock</h3>
+      <h3>{t("dashboard.lowStock")}</h3>
       {loading ? null : lowStock.length === 0 ? (
-        <EmptyState icon={<AlertTriangle size={28} />} title="Nothing below reorder level" description="Products appear here when on-hand quantity drops to their reorder level." />
+        <EmptyState icon={<AlertTriangle size={28} />} title={t("dashboard.noLowStockTitle")} description={t("dashboard.noLowStockDescription")} />
       ) : (
         <DataTable
           rows={lowStock}
           columns={[
-            { header: "SKU", key: "sku", render: (row) => <span className="mono">{row.sku}</span> },
-            { header: "Product", key: "name", render: (row) => row.name },
-            { header: "On hand", key: "onHand", render: (row) => <strong>{formatQty(onHand.get(row.id))} {row.unit ?? ""}</strong> },
-            { header: "Reorder level", key: "reorderLevel", render: (row) => formatQty(row.reorderLevel) }
+            { header: t("product.sku"), key: "sku", render: (row) => <span className="mono">{row.sku}</span> },
+            { header: t("product.product"), key: "name", render: (row) => row.name },
+            { header: t("product.onHand"), key: "onHand", render: (row) => <strong>{formatQty(onHand.get(row.id))} {row.unit ?? ""}</strong> },
+            { header: t("product.reorderLevel"), key: "reorderLevel", render: (row) => formatQty(row.reorderLevel) }
           ]}
         />
       )}
 
-      <h3>Recent movements</h3>
+      <h3>{t("dashboard.recentMovements")}</h3>
       {loading ? null : recent.length === 0 ? (
-        <EmptyState icon={<History size={28} />} title="No movements yet" description="Record a receipt on the Stock page to get started." />
+        <EmptyState icon={<History size={28} />} title={t("movements.emptyTitle")} description={t("dashboard.noMovementsDescription")} />
       ) : (
         <MovementTable
           rows={recent}
-          productName={(id) => productById.get(id)?.name ?? "Deleted product"}
-          warehouseName={(id) => warehouseById.get(id)?.name ?? "Deleted warehouse"}
+          productName={(id) => productById.get(id)?.name ?? t("stock.deletedProduct")}
+          warehouseName={(id) => warehouseById.get(id)?.name ?? t("stock.deletedWarehouse")}
         />
       )}
     </section>
